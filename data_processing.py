@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
+import os
 
 def detect_outliers_mad(series, threshold=3.5):
     """Retorna uma máscara booleana indicando outliers baseados no MAD."""
@@ -17,18 +18,15 @@ def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
     print("Iniciando processamento de dados na memória...")
     df = pd.read_csv(file_path)
 
-    # 1. Removendo colunas de vazamento de dados
     cols_vazamento = ['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit']
     df = df.drop(columns=cols_vazamento, errors='ignore')
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns
-
-    # 2. Tratando valores nulos
+    
     print("Tratando valores nulos...")
     imputer = SimpleImputer(strategy='median')
     df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
 
-    # 3. Detecção de Anomalias (MAD)
     print("Aplicando detecção de anomalias (MAD)...")
     outliers_mask = pd.DataFrame()
     for col in numeric_cols:
@@ -37,7 +35,6 @@ def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
     df['has_anomaly'] = outliers_mask.any(axis=1).astype(int)
     print(f"Total de registros sinalizados como anômalos: {df['has_anomaly'].sum()}")
 
-    # 4. Normalização (RobustScaler)
     cols_to_scale = [col for col in numeric_cols if col not in ['last_updated_epoch', 'has_anomaly']]
     
     print("Normalizando os dados com RobustScaler...")
@@ -45,9 +42,10 @@ def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
     df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     
     print("Processamento concluído! DataFrame pronto para uso.\n")
+    os.makedirs('output', exist_ok=True)
+    df.to_csv('output/Processed_Weather_Data.csv', index=False)
     return df
 
-# Bloco de teste: Só executa se você rodar este script diretamente
 if __name__ == "__main__":
     df_processado = load_and_process_data()
     print("Tamanho do DataFrame processado:", df_processado.shape)
