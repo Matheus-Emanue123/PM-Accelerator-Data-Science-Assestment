@@ -1,53 +1,77 @@
 import pandas as pd
 import numpy as np
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import RobustScaler
-import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_selection import f_regression, mutual_info_regression
 
-def detect_outliers_mad(series, threshold=3.5):
+from data_processing import load_and_process_data
 
-    mediana = series.median()
-    mad = np.median(np.abs(series - mediana))
-    if mad == 0:
-        return pd.Series(False, index=series.index)
-    modified_z_score = 0.6745 * (series - mediana) / mad
-    return np.abs(modified_z_score) > threshold
+df = load_and_process_data()
 
-file_path = 'input/GlobalWeatherRepository.csv'
-print("Iniciando processamento de dados...")
-df = pd.read_csv(file_path)
+target_col = 'temperature_celsius'
 
-cols_vazamento = ['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit']
-df = df.drop(columns=cols_vazamento, errors='ignore')
+numeric_df = df.select_dtypes(include=[np.number])
 
-numeric_cols = df.select_dtypes(include=[np.number]).columns
-categorical_cols = df.select_dtypes(exclude=[np.number]).columns
+X = numeric_df.drop(columns=[target_col])
+y = numeric_df[target_col]
 
-print("Tratando valores nulos...")
-imputer = SimpleImputer(strategy='median')
-df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
+print(f"Avaliando {X.shape[1]} features numéricas contra o target '{target_col}'...\n")
 
-print("Aplicando detecção de anomalias (MAD)...")
-outliers_mask = pd.DataFrame()
-for col in numeric_cols:
-    outliers_mask[col] = detect_outliers_mad(df[col])
+print("Calculando F-Regression...")
+f_scores, p_values = f_regression(X, y)
+f_scores_normalized = f_scores / np.max(f_scores) 
+f_reg_results = pd.Series(f_scores_normalized, index=X.columns).sort_values(ascending=False)
 
-# Cria uma feature nova: 'has_anomaly' (1 se tiver pelo menos 1 outlier nas colunas numéricas, 0 caso contrário)
-df['has_anomaly'] = outliers_mask.any(axis=1).astype(int)
-print(f"Total de registros sinalizados como anômalos: {df['has_anomaly'].sum()}")
+print("Calculando Mutual Information (isso pode levar alguns segundos)...")
+mi_scores = mutual_info_regression(X, y, random_state=42)
+mi_scores_normalized = mi_scores / np.max(mi_scores)
+mi_results = pd.Series(mi_scores_normalized, index=X.columns).sort_values(ascending=False)
 
-# 4. Normalização (RobustScaler)
-# Ignoramos as colunas de data/hora epoch e a nossa nova flag de anomalia na hora de escalar
-cols_to_scale = [col for col in numeric_cols if col not in ['last_updated_epoch', 'has_anomaly']]
+top_n = 15
 
-print("Normalizando os dados com RobustScaler...")
-scaler = RobustScaler()
-df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+fig.suptitle('Feature Importance: F-Regression vs Mutual Information', fontsize=16, fontweight='bold')
 
-# 5. Exportação do Dataset Processado
-output_dir = 'output'
-os.makedirs(output_dir, exist_ok=True)
-output_file = os.path.join(output_dir, 'Processed_Weather_Data.csv')
+sns.barplot(
+    x=f_reg_results.head(top_n).values, 
+    y=f_reg_results.head(top_n).index, 
+    ax=axes[0], 
+    hue=f_reg_results.head(top_n).index, 
+    palette='viridis', 
+    legend=False
+)
+axes[0].set_title('Top 15 Features (F-Regression - Linear)', fontsize=14)
 
-df.to_csv(output_file, index=False)
-print(f"Sucesso! Dataset tratado e normalizado salvo em: {output_file}")
+sns.barplot(
+    x=mi_results.head(top_n).values, 
+    y=mi_results.head(top_n).index, 
+    ax=axes[1], 
+    hue=mi_results.head(top_n).index, 
+    palette='magma', 
+    legend=False
+)
+axes[1].set_title('Top 15 Features (Mutual Information - Não Linear)', fontsize=14)
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.savefig('output/feature_importance_comparison.png', dpi=300)
+plt.show()
+
+features_finais = [
+    'temperature_celsius', 'humidity', 'wind_kph', 'pressure_mb', 
+    'precip_mm', 'cloud', 'visibility_km', 'uv_index', 'gust_kph'
+]
+
+corr_matrix = df[features_finais].corr(method='pearson')
+
+fig, ax = plt.subplots(figsize=(12, 8))
+mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+
+sns.heatmap(corr_matrix, mask=mask, annot=True, fmt=".2f", cmap="coolwarm",
+            center=0, linewidths=0.5, ax=ax, annot_kws={"size": 10})
+            
+ax.set_title("Matriz de Correlação de Pearson (Features Refinadas)", fontsize=16, fontweight="bold")
+plt.tight_layout()
+plt.savefig('output/correlation_heatmap.png', dpi=300)
+plt.show()
+
+print("Análise concluída e gráfico salvo!")

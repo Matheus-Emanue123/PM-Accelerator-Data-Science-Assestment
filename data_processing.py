@@ -1,66 +1,53 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.feature_selection import f_regression, mutual_info_regression
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import RobustScaler
 
-file_path = 'input/GlobalWeatherRepository.csv'
-print(f"Carregando dados de: {file_path}")
-df = pd.read_csv(file_path)
+def detect_outliers_mad(series, threshold=3.5):
+    """Retorna uma máscara booleana indicando outliers baseados no MAD."""
+    mediana = series.median()
+    mad = np.median(np.abs(series - mediana))
+    if mad == 0:
+        return pd.Series(False, index=series.index)
+    modified_z_score = 0.6745 * (series - mediana) / mad
+    return np.abs(modified_z_score) > threshold
 
-target_col = 'temperature_celsius'
+def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
+    """Lê o dataset bruto, limpa, normaliza e retorna o DataFrame na memória."""
+    print("Iniciando processamento de dados na memória...")
+    df = pd.read_csv(file_path)
 
-leakage_cols = ['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit']
-df_cleaned = df.drop(columns=leakage_cols, errors='ignore')
+    # 1. Removendo colunas de vazamento de dados
+    cols_vazamento = ['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit']
+    df = df.drop(columns=cols_vazamento, errors='ignore')
 
-numeric_df = df_cleaned.select_dtypes(include=[np.number])
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
 
-imputer = SimpleImputer(strategy='median')
-numeric_data_imputed = imputer.fit_transform(numeric_df)
-numeric_df = pd.DataFrame(numeric_data_imputed, columns=numeric_df.columns)
+    # 2. Tratando valores nulos
+    print("Tratando valores nulos...")
+    imputer = SimpleImputer(strategy='median')
+    df[numeric_cols] = imputer.fit_transform(df[numeric_cols])
 
-X = numeric_df.drop(columns=[target_col])
-y = numeric_df[target_col]
+    # 3. Detecção de Anomalias (MAD)
+    print("Aplicando detecção de anomalias (MAD)...")
+    outliers_mask = pd.DataFrame()
+    for col in numeric_cols:
+        outliers_mask[col] = detect_outliers_mad(df[col])
 
-print(f"Avaliando {X.shape[1]} features numéricas contra o target '{target_col}'...\n")
+    df['has_anomaly'] = outliers_mask.any(axis=1).astype(int)
+    print(f"Total de registros sinalizados como anômalos: {df['has_anomaly'].sum()}")
 
-print("Calculando F-Regression...")
-f_scores, p_values = f_regression(X, y)
+    # 4. Normalização (RobustScaler)
+    cols_to_scale = [col for col in numeric_cols if col not in ['last_updated_epoch', 'has_anomaly']]
+    
+    print("Normalizando os dados com RobustScaler...")
+    scaler = RobustScaler()
+    df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+    
+    print("Processamento concluído! DataFrame pronto para uso.\n")
+    return df
 
-f_scores_normalized = f_scores / np.max(f_scores) 
-f_reg_results = pd.Series(f_scores_normalized, index=X.columns).sort_values(ascending=False)
-
-print("Calculando Mutual Information (isso pode levar alguns segundos)...")
-mi_scores = mutual_info_regression(X, y, random_state=42)
-
-mi_scores_normalized = mi_scores / np.max(mi_scores)
-mi_results = pd.Series(mi_scores_normalized, index=X.columns).sort_values(ascending=False)
-
-top_n = 15
-
-fig, axes = plt.subplots(1, 2, figsize=(16, 8))
-fig.suptitle('Feature Importance: F-Regression vs Mutual Information', fontsize=16, fontweight='bold')
-
-sns.barplot(
-    x=f_reg_results.head(top_n).values, 
-    y=f_reg_results.head(top_n).index, 
-    ax=axes[0], 
-    hue=f_reg_results.head(top_n).index, 
-    palette='viridis', 
-    legend=False
-)
-
-sns.barplot(
-    x=mi_results.head(top_n).values, 
-    y=mi_results.head(top_n).index, 
-    ax=axes[1], 
-    hue=mi_results.head(top_n).index, 
-    palette='magma', 
-    legend=False
-)
-
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.savefig('feature_importance_comparison.png', dpi=300)
-plt.show()
-
+# Bloco de teste: Só executa se você rodar este script diretamente
+if __name__ == "__main__":
+    df_processado = load_and_process_data()
+    print("Tamanho do DataFrame processado:", df_processado.shape)
