@@ -6,9 +6,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from xgboost import XGBRegressor
 from sklearn.model_selection import GridSearchCV
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = ROOT_DIR / 'output'
 
 print("Carregando dados processados...")
-df = pd.read_csv('output/Processed_Weather_Data.csv')
+df = pd.read_csv(OUTPUT_DIR / 'Processed_Weather_Data.csv')
 df['last_updated'] = pd.to_datetime(df['last_updated'])
 df = df.sort_values(by='last_updated')
 
@@ -96,7 +100,8 @@ ax.set_xticklabels(nomes, rotation=45, ha='right', fontsize=11)
 ax.axhline(0, color='black', linewidth=1)
 
 plt.tight_layout()
-plt.savefig('output/05_evolucao_completa_modelos.png', dpi=300)
+OUTPUT_DIR.mkdir(exist_ok=True)
+plt.savefig(OUTPUT_DIR / '05_evolucao_completa_modelos.png', dpi=300)
 plt.show()
 
 print("\nRelatório gerado com sucesso! Gráfico salvo com as 8 barras.")

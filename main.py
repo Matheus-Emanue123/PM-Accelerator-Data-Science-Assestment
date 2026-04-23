@@ -1,6 +1,10 @@
 import subprocess
 import sys
 import time
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent
+SRC_DIR = ROOT_DIR / 'src'
 
 def run_script(script_name):
 
@@ -11,7 +15,7 @@ def run_script(script_name):
     time.sleep(1)
     
     try:
-        subprocess.run([sys.executable, script_name], check=True)
+        subprocess.run([sys.executable, str(SRC_DIR / script_name)], check=True)
         print(f"\n✅ SUCESSO: {script_name} finalizado sem erros.")
     except subprocess.CalledProcessError:
         print(f"\n❌ FALHA CRÍTICA: Erro detectado ao executar {script_name}.")

@@ -3,8 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_selection import f_regression, mutual_info_regression
+from pathlib import Path
 
 from data_processing import load_and_process_data
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = ROOT_DIR / 'output'
 
 df = load_and_process_data()
 
@@ -53,7 +57,8 @@ sns.barplot(
 axes[1].set_title('Top 15 Features (Mutual Information - Não Linear)', fontsize=14)
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.savefig('output/feature_importance_comparison.png', dpi=300)
+OUTPUT_DIR.mkdir(exist_ok=True)
+plt.savefig(OUTPUT_DIR / 'feature_importance_comparison.png', dpi=300)
 plt.show()
 
 features_finais = [
@@ -71,7 +76,7 @@ sns.heatmap(corr_matrix, mask=mask, annot=True, fmt=".2f", cmap="coolwarm",
             
 ax.set_title("Matriz de Correlação de Pearson (Features Refinadas)", fontsize=16, fontweight="bold")
 plt.tight_layout()
-plt.savefig('output/correlation_heatmap.png', dpi=300)
+plt.savefig(OUTPUT_DIR / 'correlation_heatmap.png', dpi=300)
 plt.show()
 
 print("Análise concluída e gráfico salvo!")

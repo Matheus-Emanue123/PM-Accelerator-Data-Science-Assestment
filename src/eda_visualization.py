@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+INPUT_FILE = ROOT_DIR / 'input' / 'GlobalWeatherRepository.csv'
+OUTPUT_DIR = ROOT_DIR / 'output'
 
 def detect_outliers_mad(series, threshold=3.5):
     mediana = series.median()
@@ -12,7 +17,7 @@ def detect_outliers_mad(series, threshold=3.5):
     return np.abs(modified_z_score) > threshold
 
 print("Carregando dados para EDA...")
-df_eda = pd.read_csv('input/GlobalWeatherRepository.csv')
+df_eda = pd.read_csv(INPUT_FILE)
 
 df_eda = df_eda.drop(columns=['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit'], errors='ignore')
 numeric_cols = df_eda.select_dtypes(include=[np.number]).columns
@@ -41,7 +46,8 @@ axes[1].set_xlabel('Precipitação (mm)')
 axes[1].set_ylabel('Frequência (Log)')
 
 plt.tight_layout()
-plt.savefig('output/01_temp_precip_dist.png', dpi=300)
+OUTPUT_DIR.mkdir(exist_ok=True)
+plt.savefig(OUTPUT_DIR / '01_temp_precip_dist.png', dpi=300)
 plt.close()
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -59,7 +65,7 @@ ax.set_title('Análise de Anomalias Climáticas (Temperatura vs Umidade)', fonts
 ax.set_xlabel('Temperatura (°C)')
 ax.set_ylabel('Umidade (%)')
 plt.tight_layout()
-plt.savefig('output/02_anomaly_analysis.png', dpi=300)
+plt.savefig(OUTPUT_DIR / '02_anomaly_analysis.png', dpi=300)
 plt.close()
 
 fig, ax = plt.subplots(figsize=(14, 7))
@@ -77,7 +83,7 @@ ax.set_title('Padrões Geográficos Globais de Temperatura', fontsize=16, fontwe
 ax.set_xlabel('Longitude')
 ax.set_ylabel('Latitude')
 plt.tight_layout()
-plt.savefig('output/03_geographical_patterns.png', dpi=300)
+plt.savefig(OUTPUT_DIR / '03_geographical_patterns.png', dpi=300)
 plt.close()
 
 print("EDA concluído! As 3 imagens foram salvas na raiz do projeto.")

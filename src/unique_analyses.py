@@ -2,8 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from pathlib import Path
 
-df = pd.read_csv('input/GlobalWeatherRepository.csv')
+ROOT_DIR = Path(__file__).resolve().parent.parent
+INPUT_FILE = ROOT_DIR / 'input' / 'GlobalWeatherRepository.csv'
+OUTPUT_DIR = ROOT_DIR / 'output'
+
+df = pd.read_csv(INPUT_FILE)
 df = df.drop(columns=['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit'], errors='ignore')
 
 df['last_updated'] = pd.to_datetime(df['last_updated'])
@@ -24,7 +29,8 @@ ax.set_ylabel('Temperatura (°C)')
 
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig('output/06_climate_analysis.png', dpi=300)
+OUTPUT_DIR.mkdir(exist_ok=True)
+plt.savefig(OUTPUT_DIR / '06_climate_analysis.png', dpi=300)
 plt.close()
 
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -45,7 +51,7 @@ axes[1].set_xlabel('Temperatura (°C)')
 axes[1].set_ylabel('Nível de Ozônio (O3)')
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.savefig('output/07_environmental_impact.png', dpi=300)
+plt.savefig(OUTPUT_DIR / '07_environmental_impact.png', dpi=300)
 plt.close()
 
 print("Unique Analyses concluídas! Painéis '06' e '07' salvos.")

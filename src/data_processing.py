@@ -2,7 +2,11 @@ import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
-import os
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+INPUT_FILE = ROOT_DIR / 'input' / 'GlobalWeatherRepository.csv'
+OUTPUT_DIR = ROOT_DIR / 'output'
 
 def detect_outliers_mad(series, threshold=3.5):
     """Retorna uma máscara booleana indicando outliers baseados no MAD."""
@@ -13,9 +17,11 @@ def detect_outliers_mad(series, threshold=3.5):
     modified_z_score = 0.6745 * (series - mediana) / mad
     return np.abs(modified_z_score) > threshold
 
-def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
+def load_and_process_data(file_path=None):
     """Lê o dataset bruto, limpa, normaliza e retorna o DataFrame na memória."""
     print("Iniciando processamento de dados na memória...")
+    if file_path is None:
+        file_path = INPUT_FILE
     df = pd.read_csv(file_path)
 
     cols_vazamento = ['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit']
@@ -42,8 +48,8 @@ def load_and_process_data(file_path='input/GlobalWeatherRepository.csv'):
     df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
     
     print("Processamento concluído! DataFrame pronto para uso.\n")
-    os.makedirs('output', exist_ok=True)
-    df.to_csv('output/Processed_Weather_Data.csv', index=False)
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    df.to_csv(OUTPUT_DIR / 'Processed_Weather_Data.csv', index=False)
     return df
 
 if __name__ == "__main__":
