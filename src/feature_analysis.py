@@ -19,14 +19,14 @@ numeric_df = df.select_dtypes(include=[np.number])
 X = numeric_df.drop(columns=[target_col])
 y = numeric_df[target_col]
 
-print(f"Avaliando {X.shape[1]} features numéricas contra o target '{target_col}'...\n")
+# print(f"Avaliando {X.shape[1]} features numéricas contra o target '{target_col}'...\n")
 
-print("Calculando F-Regression...")
+# print("Calculando F-Regression...")
 f_scores, p_values = f_regression(X, y)
 f_scores_normalized = f_scores / np.max(f_scores) 
 f_reg_results = pd.Series(f_scores_normalized, index=X.columns).sort_values(ascending=False)
 
-print("Calculando Mutual Information (isso pode levar alguns segundos)...")
+# print("Calculando Mutual Information (isso pode levar alguns segundos)...")
 mi_scores = mutual_info_regression(X, y, random_state=42)
 mi_scores_normalized = mi_scores / np.max(mi_scores)
 mi_results = pd.Series(mi_scores_normalized, index=X.columns).sort_values(ascending=False)
@@ -79,4 +79,4 @@ plt.tight_layout()
 plt.savefig(OUTPUT_DIR / 'correlation_heatmap.png', dpi=300)
 plt.show()
 
-print("Análise concluída e gráfico salvo!")
+# print("Análise concluída e gráfico salvo!")

@@ -29,7 +29,7 @@ split_index = int(len(df) * 0.8)
 X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
 y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
 
-print(f"Dados divididos: Treino ({len(X_train)}), Teste ({len(X_test)}).\n")
+# print(f"Dados divididos: Treino ({len(X_train)}), Teste ({len(X_test)}).\n")
 
 resultados = {}
 
@@ -43,7 +43,7 @@ def avaliar_modelo(modelo, nome, fit=True):
     print(f"{nome.ljust(35)} | R2: {r2:.4f} | MAE: {mae:.2f}°C")
     return modelo
 
-print("--- FASE 1: Modelos Individuais (Default) ---")
+# print("--- FASE 1: Modelos Individuais (Default) ---")
 lr = LinearRegression()
 rf = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)
 xgb = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42, n_jobs=-1)
@@ -59,7 +59,7 @@ avaliar_modelo(ens1, "4. Ensemble 1 (LR + RF + XGB)")
 ens2 = VotingRegressor(estimators=[('rf', rf), ('xgb', xgb)])
 avaliar_modelo(ens2, "5. Ensemble 2 (Sem LR)")
 
-print("\n--- FASE 3: Grid Search (Isso leva um minutinho) ---")
+# print("\n--- FASE 3: Grid Search (Isso leva um minutinho) ---")
 
 grid_rf = GridSearchCV(RandomForestRegressor(random_state=42, n_jobs=-1), 
                        {'n_estimators': [100, 200], 'max_depth': [10, 15]}, 
@@ -75,7 +75,7 @@ grid_xgb.fit(X_train, y_train)
 xgb_opt = grid_xgb.best_estimator_
 avaliar_modelo(xgb_opt, "7. XGBoost (Otimizado)", fit=False)
 
-print("\n--- FASE 4: O Ensemble Definitivo ---")
+# print("\n--- FASE 4: O Ensemble Definitivo ---")
 ens3 = VotingRegressor(estimators=[('rf_opt', rf_opt), ('xgb_opt', xgb_opt)])
 avaliar_modelo(ens3, "8. Ensemble 3 (Otimizados)")
 
@@ -104,4 +104,4 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 plt.savefig(OUTPUT_DIR / '05_evolucao_completa_modelos.png', dpi=300)
 plt.show()
 
-print("\nRelatório gerado com sucesso! Gráfico salvo com as 8 barras.")
+# print("\nRelatório gerado com sucesso! Gráfico salvo com as 8 barras.")

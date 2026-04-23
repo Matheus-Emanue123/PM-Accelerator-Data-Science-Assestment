@@ -16,7 +16,7 @@ def detect_outliers_mad(series, threshold=3.5):
     modified_z_score = 0.6745 * (series - mediana) / mad
     return np.abs(modified_z_score) > threshold
 
-print("Carregando dados para EDA...")
+# print("Carregando dados para EDA...")
 df_eda = pd.read_csv(INPUT_FILE)
 
 df_eda = df_eda.drop(columns=['temperature_fahrenheit', 'feels_like_celsius', 'feels_like_fahrenheit'], errors='ignore')
@@ -86,4 +86,4 @@ plt.tight_layout()
 plt.savefig(OUTPUT_DIR / '03_geographical_patterns.png', dpi=300)
 plt.close()
 
-print("EDA concluído! As 3 imagens foram salvas na raiz do projeto.")
+# print("EDA concluído! As 3 imagens foram salvas na raiz do projeto.")
